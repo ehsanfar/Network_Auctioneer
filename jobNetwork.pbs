@@ -1,0 +1,7 @@
+#!/bin/bash
+#PBS -l nodes=3:ppn=20
+#PBS -N crunch
+#PBS -j oe
+#PBS -M aehsanfa@stevens.edu
+cd /home/abbas.ehsanfar/ofspy_auction/
+~/anaconda3/bin/python selectNetwroks.py --nproc 60
