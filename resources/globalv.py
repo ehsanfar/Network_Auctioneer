@@ -46,7 +46,8 @@ def createBid(numf):
 	templist = numf * [basebids]
 	bidcombinatorics = product(*templist)
 	# random.shuffle(bidcombinatorics)
-	# yield {'f%d'%i: (0, 1000) for i in range(numf)}
+	yield {'f%d'%i: (0, 1000) for i in range(numf)}
+	yield {'f%d'%i: (1000, 100) for i in range(numf)}
 	for tuptup in bidcombinatorics: 
 		minedgecost = min([tup[0] for tup in tuptup])
 		maxedgecost = max([tup[0] for tup in tuptup])
@@ -57,5 +58,7 @@ def createBid(numf):
 				
 		yield {'f%d'%i: tup for i, tup in enumerate(tuptup)}
 
-# print(list(createBid(3)))
+
+# print(len(list(createBid(2))))
 # print(len(list(createBid(3))))
+# print(len(list(createBid(4))))

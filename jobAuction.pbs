@@ -3,5 +3,5 @@
 #PBS -N crunch
 #PBS -j oe
 #PBS -M aehsanfa@stevens.edu
-cd /home/abbas.ehsanfar/ofspy_auction/
+cd /home/abbas.ehsanfar/ofspy_auction/bin/
 ~/anaconda3/bin/python runAuction.py --nproc 60
