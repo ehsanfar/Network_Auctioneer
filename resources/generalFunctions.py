@@ -25,8 +25,19 @@ import hashlib
 import json
 import pickle
 from .result import QResult, DesignClass
+from .globalv import *
 import os
 
+def calAvgPrice(pathedgelist, elfedDict, fedPricedict):
+    n = 0
+    for edgelist in pathedgelist: 
+        sourcefed = elfedDict[edgelist[0][0]]
+        pathcostlist = [fedPricedict[elfedDict[e[1]]] for e in edgelist if elfedDict[e[1]] != sourcefed]
+        n += len(pathcostlist)
+        cost += sum(pathcostlist)
+    
+    return cost/n
+    
 def pickTask(task, time):
     element = task.element
     task.lastelement = element

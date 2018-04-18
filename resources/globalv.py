@@ -62,3 +62,20 @@ def createBid(numf):
 # print(len(list(createBid(2))))
 # print(len(list(createBid(3))))
 # print(len(list(createBid(4))))
+
+s_1 = s_3 = 0.05
+s_5 = 0.04
+s_2 = 0.05
+d_2 = 0.5
+d_3 = 0.33
+d_4 = 0.25
+d_5 = 0.2
+d_6 = 0.15
+w_1 = 0.85
+w_2 = 0.4
+w_3 = 0.28
+w_4 = 0.225
+w_5 = 0.16
+w_6 = 0.11
+axes_list_2 =  [[s_2, s_1, w_2, w_1], [s_2+1*d_2, s_1, w_2, w_1]]
+my_dpi = 300

@@ -357,10 +357,10 @@ def runAuctionProc(baseObj, nettopObj, fedBidDictList, proc):
 			solutionObj = MILPSolution(nettopObj.hashid, time, fedBidDict = fedBidDict, edgelist = [])
 			solhashid = solutionObj.hashid
 			if solhashid in solutionObjDict or solhashid in procSolObjDict:
-				# print(solhashid, " exists")
+				print(solhashid, " exists")
 				continue 
-			# else: 
-				# print(solhashid, " created")
+			else: 
+				print(solhashid, " created")
 
 			solutionObj.centrlaizedValues = baseObj['centrlaizedValues'].copy()
 			solutionObj.independentValues = baseObj['independentValues'].copy()			
@@ -375,7 +375,7 @@ def runAuctionProc(baseObj, nettopObj, fedBidDictList, proc):
 			edgePriceDict = {e: fedBidDict[Objects.elfedDict[e[1]]][0] for e in nettopObj.edges}
 			tempObj = findsolution(nettopObj, tempObj, fedBidDict)
 			pathedgelist_fed = findbundles(nettopObj, tempObj)
-			solutionObj.federatedPathlist = [[e[0] for e in l] for l in pathedgelist_fed]
+			solutionObj.federatedPathlist = pathedgelist_fed
 			fedValDict = tempObj.fedValDict.copy()
 			solutionObj.federatedValues = [v for f,v in sorted(fedValDict.items())]
 			# tempObj.reset()
@@ -419,7 +419,7 @@ def runAuctionProc(baseObj, nettopObj, fedBidDictList, proc):
 			# print()
 			
 			procSolObjDict[solhashid] = solutionObj
-			if k%10 == 0: 
+			if k%10 == 0 or k == len(fedBidDictList) - 1:  
 				with open(proc_sol_filename, 'wb') as outfile: 
 					pickle.dump(procSolObjDict, outfile)
 				with open(proc_milp_filename, 'wb') as outfile: 
@@ -437,7 +437,7 @@ def multiprocrunAuction(nproc):
 	proc_filenameDict = {proc: sol_filename.replace('.p','')  + '_proc%s.p'%str(proc).zfill(3) for proc in range(nproc)}
 	proc_milpfnameDict = {proc: milp_filename.replace('.p','')  + '_proc%s.p'%str(proc).zfill(3) for proc in range(nproc)}
 	# random.shuffle(filenamelist)
-	for filename in filenamelist[:1]:
+	for filename in filenamelist:
 		print(filename)
 		filename = dir_topologies + filename
 		fsolution = filename + '_solutionDict.p'
@@ -445,7 +445,7 @@ def multiprocrunAuction(nproc):
 		
 		with open(ftopnetworks, 'rb') as infile: 
 			nettopObjList = pickle.load(infile)
-		
+			
 		for n, nettopObj in enumerate(nettopObjList):
 			# try:
 				Objects = buildObjects(nettopObj)
@@ -463,11 +463,15 @@ def multiprocrunAuction(nproc):
 				# print(pathedgelist_ind)
 				# print(pathedgelist_cent)
 				
+				
+				
+				
+				
 				baseObj = {}
 				baseObj['centrlaizedValues'] = [v for f, v in sorted(centralizedObj.fedValDict.items())]
 				baseObj['independentValues'] = [v for f, v in sorted(independentObj.fedValDict.items())]			
-				baseObj['centralizedPathlist'] = [[e[0] for e in l] for l in pathedgelist_cent]
-				baseObj['independentPathlist'] = [[e[0] for e in l] for l in pathedgelist_ind]
+				baseObj['centralizedPathlist'] = pathedgelist_cent
+				baseObj['independentPathlist'] = pathedgelist_ind
 				baseObj['pathedgelist_cent'] = pathedgelist_cent
 				
 				allBidList = list(createBid(nf))
@@ -492,18 +496,20 @@ def multiprocrunAuction(nproc):
 						with open(proc_sol_filename, 'rb') as infile:
 						   tempDict = pickle.load(infile)
 						   for h, obj in tempDict.items():
-							   solutionObjDict[h] = obj 
-							
-						with open(sol_filename, 'wb') as outfile: 
-							pickle.dump(solutionObjDict, outfile)
+						   	solutionObjDict[h] = obj 
 								
 					if os.path.isfile(proc_milp_filename):
 						with open(proc_milp_filename, 'rb') as infile:
 						   tempDict = pickle.load(infile)
 						   for h, obj in tempDict.items():
 						   	milpObjDict[h] = {**obj, **milpObjDict[h]}
-						with open(milp_filename, 'wb') as outfile: 
-							pickle.dump(milpObjDict, outfile)
+						   	
+				with open(milp_filename, 'wb') as outfile: 
+					pickle.dump(milpObjDict, outfile)
+					
+				with open(sol_filename, 'wb') as outfile: 
+					print("file is saved")
+					pickle.dump(solutionObjDict, outfile)
 					
 			# except:
 			# 	continue
@@ -512,28 +518,26 @@ def multiprocrunAuction(nproc):
 		proc_sol_filename = proc_filenameDict[proc]
 		proc_milp_filename = proc_milpfnameDict[proc]
 		if os.path.isfile(proc_sol_filename):
-			with open(proc_sol_filename, 'rb') as infile:
-			   tempDict = pickle.load(infile)
-			   for h, obj in tempDict.items():
-			   	solutionObjDict[h] = obj 
-			
-			with open(sol_filename, 'wb') as outfile: 
-				pickle.dump(solutionObjDict, outfile)
+			# with open(proc_sol_filename, 'rb') as infile:
+			#    tempDict = pickle.load(infile)
+			#    for h, obj in tempDict.items():
+			#    	solutionObjDict[h] = obj 
 			
 			os.remove(proc_sol_filename)
 			
 		if os.path.isfile(proc_milp_filename):		
-			with open(proc_milp_filename, 'rb') as infile:
-			   tempDict = pickle.load(infile)
-			   for h, obj in tempDict.items():
-			   	milpObjDict[h] = {**obj, **milpObjDict[h]}
+			# with open(proc_milp_filename, 'rb') as infile:
+			#    tempDict = pickle.load(infile)
+			#    for h, obj in tempDict.items():
+			#    	milpObjDict[h] = {**obj, **milpObjDict[h]}
 
 
-			with open(milp_filename, 'wb') as outfile: 
-				pickle.dump(milpObjDict, outfile)
+			# with open(milp_filename, 'wb') as outfile: 
+			# 	pickle.dump(milpObjDict, outfile)
 	
 			os.remove(proc_milp_filename)
-
+	
+	
 def testFiles(): 
 	filename = "milpObjDict.p"
 	with open(dir_simulations + filename, 'rb') as infile: 
@@ -554,6 +558,89 @@ def testFiles():
 			print(h)
 			print(obj.federatedMILPValues)
 			print(obj.federatedSLSQPPrices)
+
+
+def updateSolutions(nproc): 
+	global dir_simulations
+	# filename = "solutionObjDictII.p"
+	filenameII = "solutionObjDictII.p"
+	filenameIII = "solutionObjDictIII.p"
+	with open(dir_simulations + filenameII, 'rb') as infile: 
+		solutionObjDict = pickle.load(infile)
+	
+	with open(dir_topologies + 'hashNetDict.p', 'rb') as infile: 
+		hashNetDict = pickle.load(infile)
+	 
+	def updateSol(hashNetDict, solutionObjDict, hashlist, proc):
+		proc_filename = filenameII[:-2] + '_proc%s.p'%str(proc).zfill(2)
+		procDict = {}
+		for nh in hashlist:
+			netDict = solutionObjDict[nh]
+		# for k, netDict in list(solutionObjDict.items())[:1]: 
+			# i += 1 
+			nettopObj = hashNetDict[nh]
+			Objects = buildObjects(nettopObj)
+			nf = Objects.numfederates
+			# print("%d out of %d"%(i, len(solutionObjDict)), k, nf)
+			centralizedObj = LiteSolution(fedBidDict = {'f%d'%i: (epsilon, 1000) for i in range(nf)}, nettopObj = nettopObj)
+			centralizedObj = findsolution(nettopObj, centralizedObj, Objects.centPriceDict)
+			pathedgelist_cent = findbundles(nettopObj, centralizedObj)
+			independentObj = LiteSolution(fedBidDict = {'f%d'%i: (1000, 100) for i in range(nf)}, nettopObj = nettopObj)		
+			independentObj = findsolution(nettopObj, independentObj, Objects.indPriceDict)
+			pathedgelist_ind = findbundles(nettopObj, independentObj)
+			
+			print("centralized and independent values:", centralizedObj.fedValDict, independentObj.fedValDict)
+			print("centralized pathedgelist length:", pathedgelist_cent)
+			print("independent pathedgelist length:", pathedgelist_ind)
+			for h, obj in netDict.items(): 
+				# print(h)
+				obj.independentPathlist = pathedgelist_ind
+				obj.centralizedPathlist = pathedgelist_cent 
+				obj.centrlaizedValues = [v for f, v in sorted(centralizedObj.fedValDict.items())]
+				obj.independentValues = [v for f, v in sorted(independentObj.fedValDict.items())]
+				
+				fedBidDict = obj.fedBidDict
+				federatedObj = LiteSolution(fedBidDict = fedBidDict, nettopObj = nettopObj)
+				federatedObj = findsolution(nettopObj, federatedObj, fedBidDict)
+				pathedgelist_fed = findbundles(nettopObj, federatedObj)
+				obj.federatedPathlist = pathedgelist_fed
+				obj.federatedValues = [v for f,v in sorted(federatedObj.fedValDict.items())]
+				# print("federated Pathlist:", obj.federatedPathlist)
+				# print("federated Value:", federatedObj.fedValDict) 
+				netDict[h] = obj
+			
+			procDict[nh] = netDict
+		
+		with open(dir_simulations + proc_filename, 'wb') as outfile: 
+			pickle.dump(procDict ,outfile)
+	
+	allsolutiondics = sorted(list(solutionObjDict.items()), key = lambda x: len(set(hashNetDict[x[0]].federates)))
+	N = len(allsolutiondics)
+	
+	allProcs = []
+	for proc in range(nproc):
+		inds = range(proc, N, nproc)
+		hashlist = [allsolutiondics[i][0] for i in inds]
+		print("length o hashlist:", len(hashlist))
+		p = Process(target=updateSol, args=(hashNetDict, solutionObjDict, hashlist, proc))
+		p.start()
+		allProcs.append(p)
+	
+	for a in allProcs: 
+		a.join()
+		
+	solutionObjDict = {}
+	for proc in range(nproc): 
+		proc_filename = filenameII[:-2] + '_proc%s.p'%str(proc).zfill(2)
+		
+		with open(dir_simulations + proc_filename, 'rb') as infile: 
+			procSolDict = pickle.load(infile)
+		
+		for k, netDict in procSolDict.items(): 
+			solutionObjDict[k] = netDict
+
+	with open(dir_simulations + filenameIII, 'wb') as outfile: 
+		pickle.dump(solutionObjDict ,outfile)
 	
 if __name__ == '__main__':	
 	parser = argparse.ArgumentParser(description="This processed raw data of twitter.")
@@ -578,7 +665,8 @@ if __name__ == '__main__':
 		milpObjDict = defaultdict(dict)
 		
 	Objects = namedtuple('Objects', [])
-	multiprocrunAuction(nproc)
+	# multiprocrunAuction(nproc)
+	updateSolutions(nproc)
 	
 	# testFiles()
 		

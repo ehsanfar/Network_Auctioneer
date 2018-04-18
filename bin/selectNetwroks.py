@@ -13,20 +13,21 @@ Licensed under the Apache License, Version 2.0 (the "License");
    limitations under the License.
 """
 
+import sys, os
+sys.path.append(os.path.abspath('..'))
+
 from resources.classes import *
 from resources.globalv import * 
 from collections import defaultdict, Counter
 from itertools import product 
 import pickle
-import os
 import random
 import hashlib
 from resources.optimizeMILP import optimizeMILP
 from multiprocessing import Process, Manager
 import argparse
-import os
 
-dir_topologies = 'topologies_new/' 
+dir_topologies = os.path.abspath('..') + '/topologies_new/' 
 
 def createNetTopologies(): 	
 	global 	seedlist, filename, numfederates, elementnames, edgedivider
@@ -284,6 +285,19 @@ def aggregate60Nodes():
 		
 		with open(filename, 'wb') as outfile: 
 			pickle.dump(finalDict, outfile)
+
+def aggregateNetworks(): 
+	netlist = []	
+	for (numfederates, numelements), edgedivider in list(fedeldensitylist): 
+		filename = dir_topologies + 'hashNetworkDict_elements%d_federates%d_density%d_top10.p'%(numelements, numfederates, edgedivider)
+		# if os.path.isfile(filename): 
+		with open(filename, 'rb') as infile:
+			netlist.extend(pickle.load(infile))
+			
+	hashNetDict = {net.hashid: net for net in netlist}
+	with open(dir_topologies + 'hashNetDict.p', 'wb') as outfile: 
+		pickle.dump(hashNetDict, outfile)
+
 			
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="This processed raw data of twitter.")
@@ -297,9 +311,10 @@ if __name__ == '__main__':
 	# basecost = [0, 200, 400, 600, 800, 1000]
 	seedlist = list(range(0,500))
 	# for (numfederates, numelements), edgedivider in reversed(list(product([(2,10), (2,15), (3,15), (2,20), (3,20), (4,20)], [3,5,7,11]))): 
-	for (numfederates, numelements), edgedivider in list(fedeldensitylist): 
-		filename = dir_topologies + 'hashNetworkDict_elements%d_federates%d_density%d.p'%(numelements, numfederates, edgedivider)
-		elementnames = ['e%d'%(i+1) for i in range(numelements)]
+	aggregateNetworks()
+	# for (numfederates, numelements), edgedivider in list(fedeldensitylist): 
+		# filename = dir_topologies + 'hashNetworkDict_elements%d_federates%d_density%d.p'%(numelements, numfederates, edgedivider)
+		# elementnames = ['e%d'%(i+1) for i in range(numelements)]
 		# createNetTopologies()
 		# multiProcCostValue() 
-		calAuctionScore()
+		# calAuctionScore()
