@@ -28,15 +28,36 @@ from .result import QResult, DesignClass
 from .globalv import *
 import os
 
+def groupbylists(l1, l2, func = 'avg'): 
+    dic = defaultdict(list)
+    # previous = l1[0]
+    for e1, e2 in zip(l1, l2):
+        dic[e1].append(e2)
+    
+    if func == 'avg':
+        return zip(*[(x, np.mean(y)) for x,y in sorted(dic.items())])
+    else: 
+        return zip(*[(x, y) for x,y in sorted(dic.items())])
+    
 def calAvgPrice(pathedgelist, elfedDict, fedPricedict):
     n = 0
+    cost = 0
+    # print(pathedgelist)
+    # print("new path list")
     for edgelist in pathedgelist: 
         sourcefed = elfedDict[edgelist[0][0]]
         pathcostlist = [fedPricedict[elfedDict[e[1]]] for e in edgelist if elfedDict[e[1]] != sourcefed]
-        n += len(pathcostlist)
-        cost += sum(pathcostlist)
+        # print(edgelist)
+        # print("federates of path:", sourcefed, [elfedDict[e[1]] for e in edgelist])
+        # print("pathcostlist:", pathcostlist)
+        if pathcostlist:
+            n += len(pathcostlist)
+            cost += sum(pathcostlist)
     
-    return cost/n
+    if n == 0: 
+        return epsilon
+    else:
+        return cost/n
     
 def pickTask(task, time):
     element = task.element

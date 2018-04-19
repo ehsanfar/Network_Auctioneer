@@ -28,11 +28,10 @@ from collections import defaultdict
 import numpy as np 
 import matplotlib.pylab as plt 
 
-
 def convertSolutionDicts(): 
 	global dir_simul
-	sol_filename = dir_simul + 'solutionObjDict.p'
-	sol_filename_new = dir_simul + 'solutionObjDictII.p'
+	sol_filename = dir_simul + 'solutionObjDictIII.p'
+	sol_filename_new = dir_simul + 'solutionObjDictIII_new.p'
 	new_solutionObjDict = defaultdict(dict)
 
 	if os.path.isfile(sol_filename): 
@@ -40,6 +39,8 @@ def convertSolutionDicts():
 	        solutionObjDict = pickle.load(infile)
 	    
 	    for k, obj in solutionObjDict.items(): 
+	    	print(k)
+	    	print(list(obj.keys()))
 	    	if int(k[32:]) in new_solutionObjDict[k[:32]]:
 	    		print("repetitive")
 	    	new_solutionObjDict[k[:32]][int(k[32:])] = obj
@@ -51,9 +52,10 @@ def convertSolutionDicts():
 		pickle.dump(new_solutionObjDict, outfile)	
 
 
-def plotAvgPricevsBid(): 
+def savePlotDataSet(): 
 	global dir_topol
-	sol_filename_new = dir_simul + 'solutionObjDictII.p'
+	sol_filename_new = dir_simul + 'solutionObjDictIII.p'
+	result_filename = dir_simul + 'resultDict.p'
 	if os.path.isfile(sol_filename_new): 
 	    with open(sol_filename_new, 'rb') as infile:
 	        solutionObjDict = pickle.load(infile)
@@ -71,12 +73,14 @@ def plotAvgPricevsBid():
 	
 	print("number of topologies:", len(topologies))
 	
-			
+	resultDict = {}
+	print("length of solutionObjDict: ", len(solutionObjDict))
 	for k, dic in list(solutionObjDict.items()):
 		networkObj = next(x for x in topologies if x.hashid == k)
 		# print(networkObj)
 		elfedDict = {e: f for e,f in zip(networkObj.elements, networkObj.federates)}
-		if len(dic) == 210: 
+		# print(len(dic))
+		if len(dic) in [210, 1046]: 
 			selected = []
 			avgsellbid = []
 			avgbuybid = []
@@ -89,6 +93,9 @@ def plotAvgPricevsBid():
 			bidslist = [obj.fedBidDict.values() for obj in selected]
 			# print(bidslist)
 			avgsellbid = [np.mean([b[0] for b in bids]) for bids in bidslist]
+			selected = [obj for _, obj in zip(avgsellbid, selected)]
+			bidslist = [bid for _, bid in zip(avgsellbid, bidslist)]
+			avgsellbid = sorted(avgsellbid)
 			avgbuybid = [np.mean([b[1] for b in bids]) for bids in bidslist]
 			avgfedslsprice = []
 			avgfedmilprice = []
@@ -98,37 +105,50 @@ def plotAvgPricevsBid():
 			# avgfedmilprice = [np.mean(obj.federatedMILPPrices) for obj in selected]
 			# avgcentslsprice = [np.mean(obj.centralizedSLSQPPrices) for obj in selected]
 			# avgcentmilprice = [np.mean(obj.centralizedMILPPrices) for obj in selected]
-			avgfedvalues = [np.mean(obj.federatedValues) for obj in selected]
-			avgcentvalues = [np.mean(obj.centralizedValues) for obj in selected]
-			
+			avgfedvalues = [sum(obj.federatedValues) for obj in selected]
+			avgcentvalues = [sum(obj.centralizedMILPValues) for obj in selected]
+			avgindepvalues = [sum(obj.independentValues) for obj in selected]
+			print(avgindepvalues)
+			print(k)
 			for obj in selected:
-				print(obj.hashid)
+				# print(obj.hashid)
 				fedMilpPriceDict = {'f%d'%i: p for i,p in enumerate(obj.federatedMILPPrices)}
 				centMilpPriceDict =  {'f%d'%i: p for i,p in enumerate(obj.centralizedMILPPrices)}
 				fedSLSPriceDict =  {'f%d'%i: p for i,p in enumerate(obj.federatedSLSQPPrices)}
 				centSLSPriceDict =  {'f%d'%i: p for i,p in enumerate(obj.centralizedSLSQPPrices)} 
 				
-				print(obj.federatedPathlist)
-				print(obj.centralizedPathlist)
+				# print(obj.federatedPathlist)
+				# print(obj.centralizedPathlist)
 				avgfedmilprice.append(calAvgPrice(obj.federatedPathlist, elfedDict, fedMilpPriceDict))
 				avgfedslsprice.append(calAvgPrice(obj.federatedPathlist, elfedDict, fedSLSPriceDict))
 				avgcentmilprice.append(calAvgPrice(obj.centralizedPathlist, elfedDict, centMilpPriceDict))
 				avgcentmilprice.append(calAvgPrice(obj.centralizedPathlist, elfedDict, centSLSPriceDict))
 					
 			
-			
 			nethashid = k
+			titles = ['numfederates', 'sell', 'buy', 'fedmilp', 'centmilp', 'fedsls', 'centsls', 'fedvalue', 'centvalue', 'indepvalue']
+			if len(dic) == 210:
+				numf = 2
+			elif len(dic) == 1046: 
+				print("length 1046")
+				numf = 3
+			else: 
+				numf == None
+				
+			resultlist = [numf, avgsellbid, avgbuybid, avgfedmilprice, avgcentmilprice, avgfedslsprice, avgcentslsprice, avgfedvalues, avgcentvalues, avgindepvalues]
+			# sellbuymilp = list(zip(list(sorted(zip(avgsellbid, avgbuybid, avgfedmilprice, avgcentmilprice, avgfedslsprice, avgcentslsprice))) 
+			resultDict[k] = dict(zip(titles, resultlist))
+			# buyset = sorted(list(set([e[2] for e in sellbuymilp])))
+			# fig = plt.figure(figsize=(8, 4), dpi=my_dpi)
+			# ax = fig.add_axes(axes_list_2[0])
+			# for bpr in buyset: 
+			# 	plt.plot([e[0] for e in sellbuymilp])
 			
-			sellbuymilp = list(sorted(zip(avgsellbid, avgbuybid, avgfedmilprice, avgfedslsprice))) 
-			buyset = sorted(list(set([e[2] for e in sellbuymilp])))
-			fig = plt.figure(figsize=(8, 4), dpi=my_dpi)
-			ax = fig.add_axes(axes_list_4[j])
+	with open(result_filename, 'wb') as outfile:
+		pickle.dump(resultDict, outfile)
 			
-			for bpr in buyset: 
-				plt.plot([e[0] for e in sellbuymilp])
-			
-			print(nethashid)
-			print(sellbuymilp)
+			# print(nethashid)
+			# print(sellbuymilp)
 	# for obj in selected: 
 	# 	print(obj.fedBidDict)
 	# 	print(obj.federatedValues)
@@ -138,7 +158,14 @@ def plotAvgPricevsBid():
 	# 	print(obj.centralizedSLSQPPrices)
 
 def countObjects(): 
-	print(len(list(solutionObjDict.keys())))
+	# print(len(list(solutionObjDict.keys())))
+	sol_filename_new = dir_simul + 'solutionObjDictIII.p'
+	if os.path.isfile(sol_filename_new): 
+	    with open(sol_filename_new, 'rb') as infile:
+	        solutionObjDict = pickle.load(infile)
+	else: 
+		solutionObjDict = {}
+		
 	for k, dic in list(solutionObjDict.items()):
 		results = createBid(2)
 		hashlist = []
@@ -160,6 +187,115 @@ def countObjects():
 					# obj.federatedPathlist)
 		# print(len(hashlist), len(hashlist2)
 
+def plotResults(): 
+	global dir_simul, dir_fig
+	result_filename = dir_simul + 'resultDict.p'
+	
+	titles = ['sell', 'buy', 'fedmilp', 'centmilp', 'fedsls', 'centsls', 'fedvalue', 'centvalue', 'indepvalue']
+	
+	with open(result_filename, 'rb') as infile:
+	    resultDict = pickle.load(infile)
+				
+	
+	aggdict2 = defaultdict(list)
+	aggdict3 = defaultdict(list)
+	# print(resultDict)
+	for k, dic in list(resultDict.items()): 
+		# print(dic)
+		for title in titles:
+			# print(dic['numfederates'])
+			# print(dic[title])
+			if dic['numfederates'] == 2:
+				aggdict2[title].extend(dic[title])
+			
+			elif dic['numfederates'] == 3:
+				aggdict3[title].extend(dic[title])
+	
+	aggdiclist = [aggdict2, aggdict3]
+	
+		
+	for i, dic in zip([2,3], aggdiclist): 
+		print([len(e) for e in dic.values()])
+		fig = plt.figure(figsize=(8, 4), dpi=my_dpi)
+		buyset = set(dic['buy'])
+		print(len(dic['sell']), len(dic['fedmilp']), len(dic['buy']))
+		baselist = list(range(500, 1001, 100))
+		buyranges = list(zip(baselist, baselist[1:]))
+		plots = ['fedmilp', 'fedsls']
+		plottitles = ['milp', 'slsqp']
+		for j, pl in enumerate(plots): 
+			ax = fig.add_axes(axes_list_2[j])
+			for brange in buyranges:
+				print(brange)
+				sell, fedmilp = zip(*[(sell, fedmilp) for sell, fedmilp, b in zip(dic['sell'], dic[pl], dic['buy']) if brange[0]<=b<brange[1] and 100<=sell<=500])
+				# print(len(sell), len(fedmilp)) 
+				# print(sell)
+				sell, avgfedmilp = groupbylists(sell, fedmilp, func = 'avg')#sorted([(sell, np.mean(avgmilp)) for sell, avgmilp in groupby(zip(dic['sell'], dic['fedmilp']), itemgetter(0))])
+				print(sell)
+				print(avgfedmilp)
+				# print(sell)
+				# for buy in buyset:
+				plt.plot(sell, avgfedmilp)
+			
+			if i == 2:
+				plt.ylim(320, 520)
+			if i == 3: 
+				plt.ylim(350, 470)			
+			plt.xlim(100, 500)
+			plt.plot([0, 500], [0, 500], '--')
+			plt.title(plottitles[j])
+			if j == 1:
+				plt.legend(['Path bid : %s-%s'%(str(tup[0]), str(tup[1])) for tup in buyranges] + ['Avg bid line'])
+			else: 
+				plt.ylabel('average actualized link price')
+				plt.xlabel('average federated link bids')
+		# ax = fig.add_axes(axes_list_2[1]) 
+		# plt.scatter(dic['sell'], dic['fedsls'])
+		plt.savefig(dir_fig + 'sell_fedprice_numfeds%s.png'%str(i).zfill(2), format='png', dpi=my_dpi, bbox_inches='tight')
+	
+	plottitles = ['fedvalue', 'centvalue']
+	fig = plt.figure(figsize=(8, 4), dpi=my_dpi)
+
+	for i, dic in zip([2,3], aggdiclist): 
+		# print([len(e) for e in dic.values()])
+		buyset = set(dic['buy'])
+		# print(len(dic['sell']), len(dic['fedmilp']), len(dic['buy']))
+		baselist = list(range(500, 1001, 100))
+		buyranges = list(zip(baselist, baselist[1:]))
+		ax = fig.add_axes(axes_list_2[i-2])
+		for brange in buyranges:
+			# print(brange)
+			sell, fedmilp = zip(*[(sell, fedmilp) for sell, fedmilp, b in zip(dic['sell'], dic['fedvalue'], dic['buy']) if brange[0]<=b<brange[1] and 100<=sell<=500])
+			# print(len(sell), len(fedmilp)) 
+			# print(sell)
+			sell, avgfedmilp = groupbylists(sell, fedmilp, func = 'avg')#sorted([(sell, np.mean(avgmilp)) for sell, avgmilp in groupby(zip(dic['sell'], dic['fedmilp']), itemgetter(0))])
+			# print(sell)
+			# print(avgfedmilp)
+			# print(sell)
+			# for buy in buyset:
+			plt.plot(sell, avgfedmilp)
+			# plt.ylim(300, 550)
+		
+		# plt.plot([0, 500], [0, 500], '--')
+		plt.title('number of federates: %d'%i)
+		
+		avgcentvalue = np.mean(dic['centvalue'])
+		avgindepvalue = np.mean(dic['indepvalue'])
+		# plt.ylim(7000, )
+		plt.axhline(y=avgcentvalue, linestyle = '--')
+		plt.axhline(y=avgindepvalue, linestyle = '-.')
+		
+		if i == 3:
+			plt.legend(['Path bid : %s-%s'%(str(tup[0]), str(tup[1])) for tup in buyranges] + ['centralized', 'independent'])
+		else: 
+			plt.ylabel('avg value')
+			plt.xlabel('avg link bid')
+		# ax = fig.add_axes(axes_list_2[1]) 
+		# plt.scatter(dic['sell'], dic['fedsls'])
+	plt.savefig(dir_fig + 'sell_fedcentvalues_numfeds.png', format='png', dpi=my_dpi, bbox_inches='tight')
+	
+	
+		
 if __name__ == '__main__':	
 	parser = argparse.ArgumentParser(description="This processed raw data of twitter.")
 	parser.add_argument('--nproc', type=int, default=3, help='cores on server')
@@ -168,12 +304,16 @@ if __name__ == '__main__':
 	argsdict = vars(args)
 	nproc = argsdict['nproc']
 	
+	dir_fig = os.path.abspath('..') + '/figures/'
 	dir_simul = os.path.abspath('..') + '/simulations/'
 	dir_topol = os.path.abspath('..') + '/topologies_new/'
-	convertSolutionDicts()
+	# convertSolutionDicts()
 	# sol_filename_new = dir_simul + 'solutionObjDictII.p'
 	
 	# convertSolutionDicts()
 	# countObjects()
-	plotAvgPricevsBid()
+	# plotAvgPricevsBid()
+	# savePlotDataSet()
+	plotResults()
 		 	
+# 
